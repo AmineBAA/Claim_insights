@@ -2,120 +2,68 @@ import streamlit as st
 import pandas as pd
 import datetime as dt
 import io
+import plotly.express as px
+from fpdf import FPDF
+import tempfile
 
-st.set_page_config(page_title="Reporting Réclamations", layout="wide")
-st.title("📊 Reporting Réclamations Clients")
+# Fonction PDF
+def generate_pdf_report(data_stats, file_path="report.pdf"):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
 
-uploaded_file = st.file_uploader("📎 Téléversez le fichier Excel des réclamations", type=["xlsx"])
+    pdf.cell(200, 10, txt="Rapport Réclamations - Synthèse", ln=True, align="C")
+    pdf.ln(10)
 
+    for title, value in data_stats.items():
+        pdf.cell(200, 10, txt=f"{title}: {value}", ln=True)
+
+    pdf.output(file_path)
+
+# Chargement du fichier
+st.title("📊 Reporting Réclamations Clients PDF + Graphiques")
+
+uploaded_file = st.file_uploader("📎 Chargez un fichier Excel", type=["xlsx"])
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
-
-    # Nettoyage des dates
+    
+    # Traitement des dates
     today = pd.to_datetime(dt.datetime.today().date())
-    df["DATE CREATION"] = pd.to_datetime(df["DATE CREATION"], errors='coerce')
-    df["DATE CLOTURE"] = pd.to_datetime(df["DATE CLOTURE"], errors='coerce')
-
-    # Délai JO recalculé
+    df["DATE CREATION"] = pd.to_datetime(df["DATE CREATION"], errors="coerce")
     df["Délai JO recalculé"] = (df["DATE CLOTURE"].fillna(today) - df["DATE CREATION"]).dt.days
+    
+    # Statistiques pour le PDF
+    total_reclamations = len(df)
+    montant_total = df[df["RESTITUTION"] == "OUI"]["MONTANT RESTITUTION"].sum()
 
-    # Tranche délai
-    def categorize_delay(d):
-        if pd.isna(d):
-            return "Non défini"
-        elif d < 10:
-            return "< 10 jours"
-        elif 10 <= d <= 40:
-            return "10 à 40 jours"
-        else:
-            return "> 40 jours"
+    # Choix des types de graphiques
+    chart_type = st.selectbox("📈 Type de graphique à afficher", ["Histogramme", "Camembert"])
+    var_to_plot = st.selectbox("📊 Variable à analyser", ["RESPONSABLE", "FAMILLE", "CANAL SOURCE", "STATUS"])
 
-    df["Tranche délai"] = df["Délai JO recalculé"].apply(categorize_delay)
+    plot_data = df[var_to_plot].fillna("Non renseigné").value_counts().nlargest(10).reset_index()
+    plot_data.columns = [var_to_plot, "Nombre"]
 
-    # Restitution
-    def rest_label(val):
-        if pd.isna(val) or str(val).strip() == "":
-            return "Non renseigné"
-        val = str(val).strip().upper()
-        return "OUI" if val == "OUI" else "NON"
+    if chart_type == "Histogramme":
+        fig = px.bar(plot_data, x=var_to_plot, y="Nombre", title=f"Histogramme des {var_to_plot}")
+    else:
+        fig = px.pie(plot_data, names=var_to_plot, values="Nombre", title=f"Répartition des {var_to_plot}")
 
-    df["Restitution label"] = df["RESTITUTION"].apply(rest_label)
-    df["Montant Restitué"] = df.apply(
-        lambda x: x["MONTANT RESTITUTION"] if x["Restitution label"] == "OUI" else 0, axis=1)
+    st.plotly_chart(fig, use_container_width=True)
 
-    # Mois / Année de création
-    df["Année"] = df["DATE CREATION"].dt.year.fillna("Non renseigné")
-    df["Mois"] = df["DATE CREATION"].dt.month.fillna("Non renseigné")
-
-    # Remplacer les valeurs NaN pour les filtres
-    df["RESPONSABLE"] = df["RESPONSABLE"].fillna("Non renseigné")
-    df["STATUS"] = df["STATUS"].fillna("Non renseigné")
-    df["CANAL SOURCE"] = df["CANAL SOURCE"].fillna("Non renseigné")
-    df["FAMILLE"] = df["FAMILLE"].fillna("Non renseigné")
-    df["ENTITE RESPONSABLE"] = df["ENTITE RESPONSABLE"].fillna("Non renseigné")
-    df["FONDEE"] = df["FONDEE"].fillna("Non renseigné")
-
-    # --- 🔍 Filtres ---
-    st.sidebar.header("🔎 Filtres")
-
-    tranche_options = sorted(df["Tranche délai"].unique())
-    responsable_options = sorted(df["RESPONSABLE"].unique())
-    statut_options = sorted(df["STATUS"].unique())
-    canal_options = sorted(df["CANAL SOURCE"].unique())
-    restitution_options = sorted(df["Restitution label"].unique())
-    annees = sorted(df["Année"].unique())
-    mois = sorted(df["Mois"].unique())
-
-    tranche_filtre = st.sidebar.multiselect("Tranche délai", tranche_options, default=tranche_options)
-    responsable_filtre = st.sidebar.multiselect("Responsable", responsable_options, default=responsable_options)
-    statut_filtre = st.sidebar.multiselect("Statut", statut_options, default=statut_options)
-    canal_filtre = st.sidebar.multiselect("Canal source", canal_options, default=canal_options)
-    restitution_filtre = st.sidebar.multiselect("Restitution", restitution_options, default=restitution_options)
-    annee_filtre = st.sidebar.multiselect("Année", annees, default=annees)
-    mois_filtre = st.sidebar.multiselect("Mois", mois, default=mois)
-
-    # --- 🎯 Application des filtres ---
-    df_filtered = df[
-        df["Tranche délai"].isin(tranche_filtre) &
-        df["RESPONSABLE"].isin(responsable_filtre) &
-        df["STATUS"].isin(statut_filtre) &
-        df["CANAL SOURCE"].isin(canal_filtre) &
-        df["Restitution label"].isin(restitution_filtre) &
-        df["Année"].isin(annee_filtre) &
-        df["Mois"].isin(mois_filtre)
-    ]
-
-    # --- 📊 Visualisations ---
-    st.subheader("📅 Histogramme des réclamations par jour")
-    by_day = df_filtered["DATE CREATION"].dt.date.value_counts().sort_index()
-    st.bar_chart(by_day)
-
-    st.subheader("📌 Répartition par Tranche de Délai")
-    st.bar_chart(df_filtered["Tranche délai"].value_counts())
-
-    st.subheader("💰 Montant total restitué")
-    st.metric("Total", f"{df_filtered['Montant Restitué'].sum():,.2f} MAD")
-
-    st.subheader("👤 Réclamations par Responsable")
-    st.bar_chart(df_filtered["RESPONSABLE"].value_counts())
-
-    st.subheader("🏢 Réclamations par Entité Responsable")
-    st.bar_chart(df_filtered["ENTITE RESPONSABLE"].value_counts())
-
-    st.subheader("🏷️ Réclamations par Famille")
-    st.bar_chart(df_filtered["FAMILLE"].value_counts())
-
-    st.subheader("⚖️ Réclamations Fondées vs Non Fondées")
-    st.bar_chart(df_filtered["FONDEE"].value_counts())
-
-    st.subheader("📡 Réclamations par Canal Source")
-    st.bar_chart(df_filtered["CANAL SOURCE"].value_counts())
-
-    # --- 📥 Téléchargement fichier enrichi filtré ---
-    st.subheader("📥 Télécharger le fichier enrichi filtré")
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-        df_filtered.to_excel(writer, index=False, sheet_name="Réclamations filtrées")
-        writer.save()
-        st.download_button("📁 Télécharger Excel", data=buffer.getvalue(),
-                           file_name="Reclamations_filtrees.xlsx", mime="application/vnd.ms-excel")
+    # Génération PDF
+    if st.button("📄 Générer rapport PDF"):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
+            generate_pdf_report(
+                {
+                    "Total réclamations": total_reclamations,
+                    "Montant total restitué": f"{montant_total:,.2f} MAD"
+                },
+                file_path=tmpfile.name
+            )
+            with open(tmpfile.name, "rb") as f:
+                st.download_button(
+                    label="📥 Télécharger le rapport PDF",
+                    data=f,
+                    file_name="rapport_reclamations.pdf",
+                    mime="application/pdf"
+                )
