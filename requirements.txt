@@ -1,9 +1,8 @@
 streamlit
 pandas
-openpyxl
-xlsxwriter
 matplotlib
-plotly
+seaborn
+openpyxl
 fpdf
 
 
