@@ -95,3 +95,6 @@ if uploaded_file:
     ax3.set_xlabel("Jour du mois")
     ax3.set_ylabel("Nombre de réclamations")
     st.pyplot(fig3)
+
+    st.dataframe(df_filtered); st.download_button("📥 Exporter en Excel", df_filtered.to_excel(index=False), file_name="reclamations_filtrees.xlsx")
+
