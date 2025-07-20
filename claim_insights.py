@@ -97,6 +97,8 @@ if uploaded_file:
     ax3.set_ylabel("Nombre de réclamations")
     st.pyplot(fig3)
 
-st.dataframe(df_filtered); st.download_button("📥 Exporter en Excel", pd.ExcelWriter((output := BytesIO()), engine="xlsxwriter").book.save() or df_filtered.to_excel(output, index=False) or output.getvalue(), file_name="reclamations_filtrees.xlsx")
-
+    # Option to download the result as a new Excel file
+    result_file = 'df_filtered.xlsx'
+    df.to_excel(result_file, index=False)
+    st.download_button(label="Download table", data=open(result_file, 'rb').read(), file_name=result_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
