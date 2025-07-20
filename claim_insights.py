@@ -110,5 +110,5 @@ if uploaded_file:
     st.dataframe(df_filtered)
 
     output = BytesIO()
-    df_filtered.to_excel(output, index=False, engine='xlsxwriter')
+    df_filtered.to_excel(output, index=False, engine='openpyxl')
     st.download_button("📥 Exporter en Excel", data=output.getvalue(), file_name="reclamations_filtrees.xlsx")
