@@ -6,7 +6,9 @@ import seaborn as sns
 from fpdf import FPDF
 from datetime import datetime
 import numpy as np
-from io import BytesIO
+
+
+st.image("logo.png", use_column_width=False)  # image en haut de page
 
 st.set_page_config(page_title="Reporting Réclamations Avancé", layout="wide")
 st.title("📊 Reporting Réclamations - Version Avancée")
