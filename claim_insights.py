@@ -8,7 +8,7 @@ from datetime import datetime
 import numpy as np
 
 
-st.image("logo.png", use_column_width=False)  # image en haut de page
+st.image("logo_saham.png", use_column_width=False)  # image en haut de page
 
 st.set_page_config(page_title="Reporting Réclamations Avancé", layout="wide")
 st.title("📊 Reporting Réclamations - Version Avancée")
