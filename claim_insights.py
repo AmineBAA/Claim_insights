@@ -3,14 +3,15 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from fpdf import FPDF
 from datetime import datetime
 import numpy as np
-
-
-st.image("logo_saham.png", use_container_width=False)  # image en haut de page
+from io import BytesIO
 
 st.set_page_config(page_title="Reporting Réclamations Avancé", layout="wide")
+
+# 📷 Image en haut de page
+st.image("logo_saham.png", use_container_width=False)  # image en haut de page
+
 st.title("📊 Reporting Réclamations - Version Avancée")
 
 uploaded_file = st.file_uploader("📎 Téléverser un fichier Excel", type=["xlsx"])
@@ -45,18 +46,22 @@ if uploaded_file:
 
     df["delai_Categ"] = df["delai_recalcule"].apply(categorize_delay)
 
-    st.sidebar.image("logo_saham.png", use_column_width=True)
-    
-    # Filtres (en colonne)
+    # Filtres dans la sidebar
+    st.sidebar.image("logo.png", use_column_width=True)
     st.sidebar.header("🔎 Filtres")
 
     categorie_filter = st.sidebar.multiselect("Catégorie de délai", df["delai_Categ"].unique(), default=df["delai_Categ"].unique())
-    delai_min, delai_max = int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max())
-    seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", min_value=int(df["delai_recalcule"].min()), max_value=int(df["delai_recalcule"].max()), value=int(df["delai_recalcule"].max()))
+
+    seuil_max = st.sidebar.slider(
+        "Délai maximum (jours ouvrés)",
+        int(df["delai_recalcule"].min()),
+        int(df["delai_recalcule"].max()),
+        int(df["delai_recalcule"].max())
+    )
 
     df_filtered = df[
         df["delai_Categ"].isin(categorie_filter) &
-        df["delai_recalcule"].between(delai_range[0], delai_range[1])
+        (df["delai_recalcule"] <= seuil_max)
     ]
 
     # Statistiques principales
@@ -65,7 +70,7 @@ if uploaded_file:
     col1.metric("Nombre total de réclamations", len(df_filtered))
     col2.metric("Réclamations avec délai ≥ 40 jours", df_filtered[df_filtered["delai_recalcule"] >= 40].shape[0])
 
-    # Visualisation par catégorie de délai
+    # Répartition par catégorie de délai (camembert)
     st.subheader("🎯 Répartition par catégorie de délai (camembert)")
     colors = {
         "< 10 jours": "green",
@@ -79,7 +84,7 @@ if uploaded_file:
             autopct="%1.1f%%", startangle=90)
     st.pyplot(fig1)
 
-    # Visualisation par famille majoritaire
+    # Répartition par famille (4 principales + Autres)
     st.subheader("🏷 Répartition par famille (4 principales + Autre)")
     top_families = df_filtered["FAMILLE"].value_counts().nlargest(4)
     df_filtered["famille_grouped"] = df_filtered["FAMILLE"].apply(
@@ -90,7 +95,7 @@ if uploaded_file:
     ax2.pie(famille_pct, labels=famille_pct.index, autopct="%1.1f%%", startangle=90)
     st.pyplot(fig2)
 
-    # Visualisation quotidienne du mois courant
+    # Réclamations par jour du mois courant
     st.subheader("📆 Réclamations par jour du mois courant")
     now = pd.to_datetime("today")
     current_month = df_filtered[df_filtered["DATE CREATION"].dt.month == now.month]
@@ -101,8 +106,10 @@ if uploaded_file:
     ax3.set_ylabel("Nombre de réclamations")
     st.pyplot(fig3)
 
-    # Option to download the result as a new Excel file
-    result_file = 'df_filtered.xlsx'
-    df.to_excel(result_file, index=False)
-    st.download_button(label="Download table", data=open(result_file, 'rb').read(), file_name=result_file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    # Tableau et export
+    st.subheader("📋 Données filtrées")
+    st.dataframe(df_filtered)
 
+    output = BytesIO()
+    df_filtered.to_excel(output, index=False, engine='xlsxwriter')
+    st.download_button("📥 Exporter en Excel", data=output.getvalue(), file_name="reclamations_filtrees.xlsx")
