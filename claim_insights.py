@@ -69,30 +69,34 @@ if uploaded_file:
     col1.metric("Nombre total de réclamations", len(df_filtered))
     col2.metric("Réclamations avec délai ≥ 40 jours", df_filtered[df_filtered["delai_recalcule"] >= 40].shape[0])
 
+    # Ligne 1 : deux colonnes côte à côte
+    col1, col2 = st.columns(2)
     # Répartition par catégorie de délai (camembert)
-    st.subheader("🎯 Répartition par catégorie de délai (camembert)")
-    colors = {
-        "< 10 jours": "green",
-        "10-20 jours": "orange",
-        "20-40 jours": "red",
-        "> 40 jours": "gray"
-    }
-    delay_counts = df_filtered["delai_Categ"].value_counts()
-    fig1, ax1 = plt.subplots()
-    ax1.pie(delay_counts, labels=delay_counts.index, colors=[colors.get(k, "blue") for k in delay_counts.index],
-            autopct="%1.1f%%", startangle=90)
-    st.pyplot(fig1)
 
-    # Répartition par famille (4 principales + Autres)
-    st.subheader("🏷 Répartition par famille (4 principales + Autre)")
-    top_families = df_filtered["FAMILLE"].value_counts().nlargest(4)
-    df_filtered["famille_grouped"] = df_filtered["FAMILLE"].apply(
-        lambda x: x if x in top_families.index else "Autre"
-    )
-    famille_pct = df_filtered["famille_grouped"].value_counts(normalize=True)
-    fig2, ax2 = plt.subplots()
-    ax2.pie(famille_pct, labels=famille_pct.index, autopct="%1.1f%%", startangle=90)
-    st.pyplot(fig2)
+    with col1:
+            st.subheader("🎯 Répartition par catégorie de délai (camembert)")
+            colors = {
+            "< 10 jours": "green",
+            "10-20 jours": "orange",
+            "20-40 jours": "red",
+            "> 40 jours": "gray"
+             }
+            delay_counts = df_filtered["delai_Categ"].value_counts()
+            fig1, ax1 = plt.subplots()
+            ax1.pie(delay_counts, labels=delay_counts.index, colors=[colors.get(k, "blue") for k in delay_counts.index],
+                 autopct="%1.1f%%", startangle=90)
+            st.pyplot(fig1)
+      with col2:
+            # Répartition par famille (4 principales + Autres)
+            st.subheader("🏷 Répartition par famille (4 principales + Autre)")
+            top_families = df_filtered["FAMILLE"].value_counts().nlargest(4)
+            df_filtered["famille_grouped"] = df_filtered["FAMILLE"].apply(
+               lambda x: x if x in top_families.index else "Autre"
+            )
+            famille_pct = df_filtered["famille_grouped"].value_counts(normalize=True)
+            fig2, ax2 = plt.subplots()
+            ax2.pie(famille_pct, labels=famille_pct.index, autopct="%1.1f%%", startangle=90)
+            st.pyplot(fig2)
 
     # Réclamations par jour du mois courant
     st.subheader("📆 Réclamations par jour du mois courant")
@@ -104,6 +108,8 @@ if uploaded_file:
     ax3.set_xlabel("Jour du mois")
     ax3.set_ylabel("Nombre de réclamations")
     st.pyplot(fig3)
+
+  
 
     # Tableau et export
     st.subheader("📋 Données filtrées")
