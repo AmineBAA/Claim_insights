@@ -46,8 +46,14 @@ if uploaded_file:
 
     categorie_filter = st.sidebar.multiselect("Catégorie de délai", df["delai_Categ"].unique(), default=df["delai_Categ"].unique())
     seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max()), int(df["delai_recalcule"].max()))
+    status_filter = st.sidebar.multiselect("Statut", df["STATUS"].dropna().unique(), default=df["STATUS"].dropna().unique())
 
-    df_filtered = df[(df["delai_Categ"].isin(categorie_filter)) & (df["delai_recalcule"] <= seuil_max)]
+    df_filtered = df[
+    (df["delai_Categ"].isin(categorie_filter)) &
+    (df["delai_recalcule"] <= seuil_max) &
+    (df["STATUS"].isin(status_filter))
+     ]
+
 
     st.subheader("📌 Statistiques principales")
     col1, col2 = st.columns(2)
