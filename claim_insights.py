@@ -43,12 +43,14 @@ if uploaded_file:
 
     df["delai_Categ"] = df["delai_recalcule"].apply(categorize_delay)
 
+    st.sidebar.image("logo_saham.png", use_column_width=True)
+    
     # Filtres (en colonne)
     st.sidebar.header("🔎 Filtres")
 
     categorie_filter = st.sidebar.multiselect("Catégorie de délai", df["delai_Categ"].unique(), default=df["delai_Categ"].unique())
     delai_min, delai_max = int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max())
-    delai_range = st.sidebar.slider("Délai recalculé (jours ouvrés)", delai_min, delai_max, (delai_min, delai_max))
+    seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", min_value=int(df["delai_recalcule"].min()), max_value=int(df["delai_recalcule"].max()), value=int(df["delai_recalcule"].max()))
 
     df_filtered = df[
         df["delai_Categ"].isin(categorie_filter) &
