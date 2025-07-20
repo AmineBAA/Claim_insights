@@ -6,6 +6,7 @@ import seaborn as sns
 from fpdf import FPDF
 from datetime import datetime
 import numpy as np
+from io import BytesIO
 
 st.set_page_config(page_title="Reporting Réclamations Avancé", layout="wide")
 st.title("📊 Reporting Réclamations - Version Avancée")
@@ -96,6 +97,7 @@ if uploaded_file:
     ax3.set_ylabel("Nombre de réclamations")
     st.pyplot(fig3)
 
-    st.dataframe(df_filtered); st.download_button("📥 Exporter en Excel", pd.ExcelWriter((output := BytesIO()), engine="xlsxwriter").book.save() or df_filtered.to_excel(output, index=False) or output.getvalue(), file_name="reclamations_filtrees.xlsx")
-
+    output = BytesIO()
+    df_filtered.to_excel(output, index=False, engine='xlsxwriter')
+    st.download_button("📥 Exporter en Excel", data=output.getvalue(), file_name="reclamations_filtrees.xlsx")
 
