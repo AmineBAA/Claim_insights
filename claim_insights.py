@@ -47,7 +47,6 @@ if uploaded_file:
     df["delai_Categ"] = df["delai_recalcule"].apply(categorize_delay)
 
     # Filtres dans la sidebar
-    st.sidebar.image("logo.png", use_column_width=True)
     st.sidebar.header("🔎 Filtres")
 
     categorie_filter = st.sidebar.multiselect("Catégorie de délai", df["delai_Categ"].unique(), default=df["delai_Categ"].unique())
