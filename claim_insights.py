@@ -28,6 +28,7 @@ if uploaded_file:
         axis=1
     )
 
+    df["ETAT"] = df["DATE CLOTURE"].apply(lambda x: "Clôturée" if pd.notnull(x) else "En cours")
 
     def get_flag(row):
        if (20 <= row["delai_recalcule"] < 40) and (row["delai_moyen"] is not None) and (row["delai_moyen"] > 30):
