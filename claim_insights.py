@@ -123,13 +123,11 @@ if uploaded_file:
         st.markdown("**Par famille (4 principales)**")
         st.pyplot(fig2)
 
-    col3, col4 = st.columns(2)
-    with col3:
-        st.markdown("**Délai moyen pour clôturer par famille**")
-        st.pyplot(fig3)
-    with col4:
-        st.markdown("**Répartition par état**")
-        st.pyplot(fig4)
+
+  
+    st.markdown("**Délai moyen pour clôturer par famille**")
+    st.pyplot(fig3)
+   
 
     st.subheader("📋 Données filtrées")
     st.dataframe(df_filtered)
