@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,8 +7,8 @@ import numpy as np
 from io import BytesIO
 
 st.set_page_config(page_title="Dashboard Réclamations", layout="wide")
-st.image("logo_saham.png", use_container_width=False)
-st.title("📊 Dashboard Réclamations")
+st.image("logo.png", use_column_width=False)
+st.title("📊 Dashboard Réclamations - Version Propre")
 
 uploaded_file = st.file_uploader("📎 Téléversez un fichier Excel", type=["xlsx"])
 
@@ -22,22 +21,17 @@ if uploaded_file:
     df["DATE CLOTURE"] = pd.to_datetime(df["DATE CLOTURE"], errors="coerce")
     today = pd.to_datetime("today")
 
+    # Délai recalculé (jours ouvrés)
     df["delai_recalcule"] = df.apply(
         lambda row: business_days_between(row["DATE CREATION"], row["DATE CLOTURE"]) if pd.notnull(row["DATE CLOTURE"])
         else business_days_between(row["DATE CREATION"], today),
         axis=1
     )
 
+    # Etat réclamation
     df["ETAT"] = df["DATE CLOTURE"].apply(lambda x: "Clôturée" if pd.notnull(x) else "En cours")
 
-    def get_flag(row):
-       if (20 <= row["delai_recalcule"] < 40) and (row["delai_moyen"] is not None) and (row["delai_moyen"] > 30):
-          return "Alerte ⛔"
-       else:
-          return "OK ✅"
-    df["Alerte délai"] = df.apply(get_flag, axis=1)
-
-
+    # Catégorie délai
     def categorize_delay(d):
         if d < 10:
             return "< 10 jours"
@@ -47,30 +41,48 @@ if uploaded_file:
             return "20-40 jours"
         else:
             return "> 40 jours"
-
     df["delai_Categ"] = df["delai_recalcule"].apply(categorize_delay)
 
+    # Délai moyen par famille (calculé sur clôturées, affiché partout)
+    famille_to_moyen = df[df["ETAT"] == "Clôturée"].groupby("FAMILLE")["delai_recalcule"].mean().to_dict()
+    df["delai_moyen"] = df["FAMILLE"].map(famille_to_moyen)
+
+    # Flag alerte uniquement pour les réclamations ouvertes
+    def get_flag(row):
+        if row["ETAT"] == "Clôturée":
+            return ""
+        if (
+            (20 <= row["delai_recalcule"] < 40)
+            and (row["delai_moyen"] is not None)
+            and (not pd.isnull(row["delai_moyen"]))
+            and (row["delai_moyen"] > 30)
+        ):
+            return "Alerte ⛔"
+        else:
+            return "OK ✅"
+    df["Alerte délai"] = df.apply(get_flag, axis=1)
+
+    # FILTRES dans la sidebar
+    st.sidebar.image("logo.png", use_column_width=True)
     st.sidebar.header("🔎 Filtres")
 
-    categorie_filter = st.sidebar.multiselect("Catégorie de délai",df["delai_Categ"].unique(), default=df["delai_Categ"].unique() )  
+    categorie_filter = st.sidebar.multiselect("Catégorie de délai", df["delai_Categ"].unique(), default=df["delai_Categ"].unique())
     seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max()), int(df["delai_recalcule"].max()))
-    status_filter = st.sidebar.multiselect("Statut", df["STATUS"].unique(), default=df["STATUS"].unique())
-    alerte = st.sidebar.multiselect("Flag Alerte",df["Alerte délai"].unique(), default=df["Alerte délai"].unique() )  
+    status_filter = st.sidebar.multiselect("Statut", df["STATUS"].dropna().unique(), default=df["STATUS"].dropna().unique())
 
     df_filtered = df[
-    (df["delai_Categ"].isin(categorie_filter)) &
-    (df["delai_recalcule"] <= seuil_max) &
-    (df["STATUS"].isin(status_filter)) &
-    (df["Alerte délai"].isin(alerte))
-     ]
+        (df["delai_Categ"].isin(categorie_filter)) &
+        (df["delai_recalcule"] <= seuil_max) &
+        (df["STATUS"].isin(status_filter))
+    ]
 
-
+    # Statistiques sur toutes les lignes filtrées
     st.subheader("📌 Statistiques principales")
     col1, col2 = st.columns(2)
     col1.metric("Nombre total de réclamations", len(df_filtered))
     col2.metric("Réclamations avec délai ≥ 40 jours", df_filtered[df_filtered["delai_recalcule"] >= 40].shape[0])
 
-    # Figures
+    # Quadriptyque visualisation
     colors = {
         "< 10 jours": "green",
         "10-20 jours": "orange",
@@ -88,7 +100,7 @@ if uploaded_file:
     fig2, ax2 = plt.subplots()
     ax2.pie(famille_pct, labels=famille_pct.index, autopct="%1.1f%%", startangle=90)
 
-    # Moyenne du délai recalculé pour clôturer une réclamation par famille (réclamations clôturées uniquement)
+    # Délai moyen pour clôturer par famille (seulement sur les réclamations clôturées)
     df_cloturee = df_filtered[df_filtered["ETAT"] == "Clôturée"]
     delai_famille = df_cloturee.groupby("FAMILLE")["delai_recalcule"].mean().sort_values()
     fig3, ax3 = plt.subplots()
@@ -97,7 +109,10 @@ if uploaded_file:
     ax3.set_xlabel("Famille")
     ax3.set_xticklabels(ax3.get_xticklabels(), rotation=30, ha="right")
 
-
+    etat_count = df_filtered["ETAT"].value_counts()
+    fig4, ax4 = plt.subplots()
+    sns.barplot(x=etat_count.index, y=etat_count.values, ax=ax4)
+    ax4.set_ylabel("Nombre")
 
     st.subheader("📊 Visualisations")
     col1, col2 = st.columns(2)
@@ -108,11 +123,13 @@ if uploaded_file:
         st.markdown("**Par famille (4 principales)**")
         st.pyplot(fig2)
 
-    
- 
-    st.markdown("**Délais moyens**")
-    st.pyplot(fig3)
-    
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown("**Délai moyen pour clôturer par famille**")
+        st.pyplot(fig3)
+    with col4:
+        st.markdown("**Répartition par état**")
+        st.pyplot(fig4)
 
     st.subheader("📋 Données filtrées")
     st.dataframe(df_filtered)
