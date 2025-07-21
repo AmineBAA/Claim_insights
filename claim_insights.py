@@ -73,7 +73,8 @@ if uploaded_file:
     df_filtered = df[
         (df["delai_Categ"].isin(categorie_filter)) &
         (df["delai_recalcule"] <= seuil_max) &
-        (df["STATUS"].isin(status_filter))
+        (df["STATUS"].isin(status_filter)) &
+        (df["Alerte délai"].isin(status_filter))
     ]
 
     # Statistiques sur toutes les lignes filtrées
