@@ -28,11 +28,6 @@ if uploaded_file:
         axis=1
     )
 
-    df["ETAT"] = df["DATE CLOTURE"].apply(lambda x: "Clôturée" if pd.notnull(x) else "En cours")
-    # Délai moyen par famille sur toutes les réclamations clôturées (map pour chaque ligne)
-    famille_to_moyen = df[df["ETAT"] == "Clôturée"].groupby("FAMILLE")["delai_recalcule"].mean().to_dict()
-    df["delai_moyen"] = df["FAMILLE"].map(famille_to_moyen)
-
 
     def get_flag(row):
        if (20 <= row["delai_recalcule"] < 40) and (row["delai_moyen"] is not None) and (row["delai_moyen"] > 30):
@@ -59,14 +54,12 @@ if uploaded_file:
     categorie_filter = st.sidebar.multiselect("Catégorie de délai",df["delai_Categ"].unique(), default=df["delai_Categ"].unique() )  
     seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max()), int(df["delai_recalcule"].max()))
     status_filter = st.sidebar.multiselect("Statut", df["STATUS"].unique(), default=df["STATUS"].unique())
-    etats = st.sidebar.multiselect("Etat",df["ETAT"].unique(), default=df["ETAT"].unique() )  
     alerte = st.sidebar.multiselect("Flag Alerte",df["Alerte délai"].unique(), default=df["Alerte délai"].unique() )  
 
     df_filtered = df[
     (df["delai_Categ"].isin(categorie_filter)) &
     (df["delai_recalcule"] <= seuil_max) &
     (df["STATUS"].isin(status_filter)) &
-    (df["ETAT"].isin(etats)) &
     (df["Alerte délai"].isin(alerte))
      ]
 
