@@ -63,7 +63,6 @@ if uploaded_file:
     df["Alerte délai"] = df.apply(get_flag, axis=1)
 
     # FILTRES dans la sidebar
-    st.sidebar.image("logo.png", use_column_width=True)
     st.sidebar.header("🔎 Filtres")
 
     categorie_filter = st.sidebar.multiselect("Catégorie de délai", df["delai_Categ"].unique(), default=df["delai_Categ"].unique())
