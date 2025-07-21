@@ -59,7 +59,8 @@ if uploaded_file:
     categorie_filter = st.sidebar.multiselect("Catégorie de délai",df["delai_Categ"].unique(), default=df["delai_Categ"].unique() )  
     seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max()), int(df["delai_recalcule"].max()))
     status_filter = st.sidebar.multiselect("Statut", df["STATUS"].dropna().unique(), default=df["STATUS"].dropna().unique())
-    etats = st.sidebar.multiselect("Etat",df["ETAT"].unique(), default=df["ETAT"].unique() ) 
+    etats = st.sidebar.multiselect("Etat",df["ETAT"].unique(), default=df["ETAT"].unique() )  
+    alerte = st.sidebar.multiselect("Flag Alerte",df["Alerte délai"].unique(), default=df["Alerte délai"].unique() )  
 
     df_filtered = df[
     (df["delai_Categ"].isin(categorie_filter)) &
@@ -70,7 +71,7 @@ if uploaded_file:
 
     st.subheader("📌 Statistiques principales")
     col1, col2 = st.columns(2)
-    col1.metric("Nombre total de réclamations", len(df_filtered))
+    col1.metric("Nombre total de réclamations", len(df))
     col2.metric("Réclamations avec délai ≥ 40 jours", df_filtered[df_filtered["delai_recalcule"] >= 40].shape[0])
 
     # Figures
