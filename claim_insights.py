@@ -65,13 +65,15 @@ if uploaded_file:
     df_filtered = df[
     (df["delai_Categ"].isin(categorie_filter)) &
     (df["delai_recalcule"] <= seuil_max) &
-    (df["STATUS"].isin(status_filter))
+    (df["STATUS"].isin(status_filter)) &
+    (df["ETAT"].isin(etats)) &
+    (df["Alerte délai"].isin(alerte))
      ]
 
 
     st.subheader("📌 Statistiques principales")
     col1, col2 = st.columns(2)
-    col1.metric("Nombre total de réclamations", len(df))
+    col1.metric("Nombre total de réclamations", len(df_filtered))
     col2.metric("Réclamations avec délai ≥ 40 jours", df_filtered[df_filtered["delai_recalcule"] >= 40].shape[0])
 
     # Figures
