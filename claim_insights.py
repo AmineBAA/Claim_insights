@@ -33,6 +33,15 @@ if uploaded_file:
     famille_to_moyen = df[df["ETAT"] == "Clôturée"].groupby("FAMILLE")["delai_recalcule"].mean().to_dict()
     df["delai_moyen"] = df["FAMILLE"].map(famille_to_moyen)
 
+
+    def get_flag(row):
+       if (20 <= row["delai_recalcule"] < 40) and (row["delai_moyen"] is not None) and (row["delai_moyen"] > 30):
+          return "Alerte ⛔"
+       else:
+          return "OK ✅"
+    df["Alerte délai"] = df.apply(get_flag, axis=1)
+
+
     def categorize_delay(d):
         if d < 10:
             return "< 10 jours"
