@@ -50,6 +50,7 @@ if uploaded_file:
     categorie_filter = st.sidebar.multiselect("Catégorie de délai",df["delai_Categ"].unique(), default=df["delai_Categ"].unique() )  
     seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max()), int(df["delai_recalcule"].max()))
     status_filter = st.sidebar.multiselect("Statut", df["STATUS"].dropna().unique(), default=df["STATUS"].dropna().unique())
+    etats = st.sidebar.multiselect("Catégorie de délai",df["ETAT"].unique(), default=df["ETAT"].unique() ) 
 
     df_filtered = df[
     (df["delai_Categ"].isin(categorie_filter)) &
@@ -91,10 +92,6 @@ if uploaded_file:
     ax3.set_xticklabels(ax3.get_xticklabels(), rotation=30, ha="right")
 
 
-    etat_count = df_filtered["ETAT"].value_counts()
-    fig4, ax4 = plt.subplots()
-    sns.barplot(x=etat_count.index, y=etat_count.values, ax=ax4)
-    ax4.set_ylabel("Nombre")
 
     st.subheader("📊 Visualisations")
     col1, col2 = st.columns(2)
@@ -110,8 +107,6 @@ if uploaded_file:
     st.markdown("**Délais moyens**")
     st.pyplot(fig3)
     
-    st.markdown("**Répartition par état**")
-    st.pyplot(fig4)
 
     st.subheader("📋 Données filtrées")
     st.dataframe(df_filtered)
