@@ -29,6 +29,9 @@ if uploaded_file:
     )
 
     df["ETAT"] = df["DATE CLOTURE"].apply(lambda x: "Clôturée" if pd.notnull(x) else "En cours")
+    # Délai moyen par famille sur toutes les réclamations clôturées (map pour chaque ligne)
+    famille_to_moyen = df[df["ETAT"] == "Clôturée"].groupby("FAMILLE")["delai_recalcule"].mean().to_dict()
+    df["delai_moyen"] = df["FAMILLE"].map(famille_to_moyen)
 
     def categorize_delay(d):
         if d < 10:
@@ -78,13 +81,15 @@ if uploaded_file:
     fig2, ax2 = plt.subplots()
     ax2.pie(famille_pct, labels=famille_pct.index, autopct="%1.1f%%", startangle=90)
 
-    now = pd.to_datetime("today")
-    df_mois = df_filtered[df_filtered["DATE CREATION"].dt.month == now.month]
-    day_counts = df_mois["DATE CREATION"].dt.day.value_counts().sort_index()
+    # Moyenne du délai recalculé pour clôturer une réclamation par famille (réclamations clôturées uniquement)
+    df_cloturee = df_filtered[df_filtered["ETAT"] == "Clôturée"]
+    delai_famille = df_cloturee.groupby("FAMILLE")["delai_recalcule"].mean().sort_values()
     fig3, ax3 = plt.subplots()
-    sns.barplot(x=day_counts.index, y=day_counts.values, ax=ax3)
-    ax3.set_xlabel("Jour du mois")
-    ax3.set_ylabel("Réclamations")
+    sns.barplot(x=delai_famille.index, y=delai_famille.values, ax=ax3)
+    ax3.set_ylabel("Délai moyen pour clôture (jours ouvrés)")
+    ax3.set_xlabel("Famille")
+    ax3.set_xticklabels(ax3.get_xticklabels(), rotation=30, ha="right")
+
 
     etat_count = df_filtered["ETAT"].value_counts()
     fig4, ax4 = plt.subplots()
