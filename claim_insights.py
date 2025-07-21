@@ -54,11 +54,16 @@ if uploaded_file:
 
     df["delai_Categ"] = df["delai_recalcule"].apply(categorize_delay)
 
+    df["STATUS"] = df["STATUS"].fillna("Non renseigné")
+    df["STATUS"] = df["STATUS"].replace("", "Non renseigné")
+
+
     st.sidebar.header("🔎 Filtres")
 
     categorie_filter = st.sidebar.multiselect("Catégorie de délai",df["delai_Categ"].unique(), default=df["delai_Categ"].unique() )  
     seuil_max = st.sidebar.slider("Délai maximum (jours ouvrés)", int(df["delai_recalcule"].min()), int(df["delai_recalcule"].max()), int(df["delai_recalcule"].max()))
-    status_filter = st.sidebar.multiselect("Statut", df["STATUS"].unique(), default=df["STATUS"].unique())
+    status_unique = sorted(df["STATUS"].unique())
+    status_filter = st.sidebar.multiselect("Statut", options=status_unique, default=status_unique)
     etats = st.sidebar.multiselect("Etat",df["ETAT"].unique(), default=df["ETAT"].unique() )  
     alerte = st.sidebar.multiselect("Flag Alerte",df["Alerte délai"].unique(), default=df["Alerte délai"].unique() )  
 
