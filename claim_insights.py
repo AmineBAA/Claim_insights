@@ -8,7 +8,7 @@ from io import BytesIO
 
 st.set_page_config(page_title="Dashboard Réclamations", layout="wide")
 st.image("logo_saham.png", use_container_width  =False)
-st.title("📊 Dashboard Réclamations - Version Propre")
+st.title("📊 Dashboard Réclamations")
 
 uploaded_file = st.file_uploader("📎 Téléversez un fichier Excel", type=["xlsx"])
 
